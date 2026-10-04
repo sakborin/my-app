@@ -29,13 +29,19 @@ function App() {
   }
 
   async function loadProducts() {
-    const res = await fetch(`${API_URL}/api/v1/products`, { headers: authHeaders() });
-    if (res.status === 401) {
-      handleLogout();
-      return;
+    try {
+      const res = await fetch(`${API_URL}/api/v1/products`, {
+        headers: authHeaders(),
+      });
+      if (res.status === 401) {
+        handleLogout();
+        return;
+      }
+      const json = await res.json();
+      setProducts(json.data || []);
+    } catch (error) {
+      console.log(error);
     }
-    const json = await res.json();
-    setProducts(json.data);
   }
 
   useEffect(() => {
@@ -50,7 +56,8 @@ function App() {
 
   async function handleSubmit(e) {
     e.preventDefault();
-    await fetch(`${API_URL}/api/v1/products`, {
+
+    const res = await fetch(`${API_URL}/api/v1/products`, {
       method: "POST",
       headers: authHeaders(),
       body: JSON.stringify({
@@ -59,15 +66,30 @@ function App() {
         stock: Number(form.stock),
       }),
     });
+
+    if (res.status === 401) {
+      handleLogout();
+      return;
+    }
+    if (!res.ok) {
+      alert("Could not add the product. Please try again.");
+      return;
+    }
+
     setForm({ name: "", price: "", stock: "" });
     loadProducts();
   }
 
   async function handleDelete(id) {
-    await fetch(`${API_URL}/api/v1/products/${id}`, {
+    const res = await fetch(`${API_URL}/api/v1/products/${id}`, {
       method: "DELETE",
       headers: authHeaders(),
     });
+
+    if (res.status === 401) {
+      handleLogout();
+      return;
+    }
     loadProducts();
   }
 
@@ -87,9 +109,28 @@ function App() {
       <AppHeader onLogout={handleLogout} />
       <main>
         <form onSubmit={handleSubmit} className="form">
-          <input name="name" placeholder="Name" value={form.name} onChange={handleChange} required />
-          <input name="price" type="number" placeholder="Price" value={form.price} onChange={handleChange} required />
-          <input name="stock" type="number" placeholder="Stock" value={form.stock} onChange={handleChange} />
+          <input
+            name="name"
+            placeholder="Name"
+            value={form.name}
+            onChange={handleChange}
+            required
+          />
+          <input
+            name="price"
+            type="number"
+            placeholder="Price"
+            value={form.price}
+            onChange={handleChange}
+            required
+          />
+          <input
+            name="stock"
+            type="number"
+            placeholder="Stock"
+            value={form.stock}
+            onChange={handleChange}
+          />
           <button type="submit">Add Product</button>
         </form>
 
@@ -114,7 +155,9 @@ function AppHeader(props) {
       <h1>Inventory</h1>
       <p>Manage your products</p>
       {props.onLogout && (
-        <button className="logout" onClick={props.onLogout}>Logout</button>
+        <button className="logout" onClick={props.onLogout}>
+          Logout
+        </button>
       )}
     </header>
   );
@@ -133,9 +176,13 @@ function ProductCard(props) {
     <div className="card">
       <div>
         <h3>{props.name}</h3>
-        <p>${props.price} · Stock: {props.stock}</p>
+        <p>
+          ${props.price} · Stock: {props.stock}
+        </p>
       </div>
-      <button className="delete" onClick={props.onDelete}>Delete</button>
+      <button className="delete" onClick={props.onDelete}>
+        Delete
+      </button>
     </div>
   );
 }
